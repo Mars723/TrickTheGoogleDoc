@@ -75,7 +75,7 @@ tell application "System Events"
   end repeat
 end tell
 
-For each run, adjust delay to the target i (e.g., 1s, 5s, 9–10s, 20s) and keep other conditions fixed.‘’‘
+For each run, adjust delay to the target i (e.g., 1s, 5s, 9–10s, 20s) and keep other conditions fixed.``` 
 
 ⸻
 
