@@ -34,8 +34,9 @@ Independent variables
 Measurement
 	•	After each run, open File → Version history → See version history and record the number of newly created minor versions v. When visible, also note approximate characters per version.
 
-Automation script (AppleScript, example)
+### Automation script (AppleScript, example)
 
+```applescript
 set letters to {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
 
 -- Baseline string to drive line breaks / punctuation rhythm
