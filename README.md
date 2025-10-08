@@ -5,25 +5,23 @@ Reverse-engineering how Google Docs generates its version history to understand 
 > ⚠️ **Responsible use**  
 > This repository is for technical research, education, and reproducibility only. Do **not** use these observations to mislead instructors or evade academic-integrity policies.
 
----
+-----
 
 ## Table of Contents
 
 - [Inspiration](#inspiration)
 - [Experimental Design & Procedure (with script)](#experimental-design--procedure-with-script)
-- [Results (numeric summary)](#results-numeric-summary)
-- [Findings & Interpretation](#findings--interpretation)
-- [Reproducibility & Environment](#reproducibility--environment)
-- [Responsible Use & Caveats](#responsible-use--caveats)
-- [License](#license)
+- [Summary](#summary)
+- [Applications](#applications)
+- [Notes & Cautions](#notes--cautions)
 
----
+-----
 
 ## Inspiration
 
-Some courses inspect Google Docs **Version history** to infer writing behavior (e.g., “pasted in one go,” “single draft,” “AI-assisted”). Out of engineering curiosity and for reproducibility, this project measures how **minor versions** are created under different **typing cadences** and **input types**, and explains why version gaps alone are a weak signal.
+This project started from a real-world frustration: professors checking Google Docs version history to spot copy-pasting or AI use. If the versions show big gaps with lots of content added at once, it looks suspicious—like you dumped in a block of text. But what if you could make fewer sub-versions, stretching out the intervals? That way, even if you did paste something in, the history looks more like natural, gradual writing. You could confidently explain to your prof that it’s all your own work. The goal here is to poke at Google’s hidden rules and find ways to make the version history work in your favor.
 
----
+-----
 
 ## Experimental Design & Procedure (with script)
 
@@ -103,48 +101,28 @@ end tell
 
 ---
 
-## Findings & Interpretation
+## Summary
 
-- **Batching + periodic snapshots.** Version creation behaves like a combination of **save batching** and **periodic snapshots**, not a simple fixed-second cutoff.  
-- **Short intervals merge edits.** With **short keystroke intervals** (a few seconds), large amounts of typing often collapse into a **single minor version**.  
-- **Longer intervals split more.** With **longer intervals** (≈10–20s), minor versions split more frequently, sometimes close to “one per input.”  
-- **Non-deterministic boundaries.** The number of characters per version varies widely even at the same `i`, suggesting **client/network latency and server scheduling jitter** shift the batch boundaries.  
-- **Empirical neighborhood.** Around **~10–11 seconds** we often observed easier splitting; below **~9 seconds** we often saw merges. These are **observations, not guarantees**.
+From the experiments, without network lag, Google Docs seems to create a new sub-version every ~11 seconds. But lag messes this up—saving a single input can take ~2s, shifting when versions split. The sweet spot: Keep inputs within every 9 seconds to “refresh” the timer and prevent new versions. This merges changes into fewer, larger versions, making the history look like steady work instead of big pastes.
 
-**Educational takeaway:** Version gaps are a **weak signal**. They should not be used in isolation to assert copy-paste, single-draft writing, or AI assistance.
+My guess on the weird letter counts (like in Exp 7): Lag causes Docs to snapshot before a save finishes, bundling uneven groups. Closer to the 11s threshold, more variability.
 
----
+-----
 
-## Reproducibility & Environment
+## Applications
 
-- **Date / TZ:** 2025-10-06, America/Indiana/Indianapolis  
-- **Doc:** blank Google Doc, default autosave, no add-ons  
-- **Browser:** Chrome (desktop)  
-- **Network:** residential broadband (ordinary variance)  
-- **Method:** automated keystrokes; manual counting in Version history
+The big win: Fewer sub-versions mean bigger time gaps between them, so you write a great amout of content with appproperiate time shown, instead of with 1 or 2 minutes, showing as a suspicious lump. Tell your prof it’s all gradual—because the history backs it up.
 
-### How to reproduce
+Bonus trick: If you paste text and the formatting screams "paste" (weird spacing, etc.), don’t freak. Just start editing right away, but make sure to input something every 9 seconds or less. This keeps the paste from triggering a new version immediately. You can fix the format over time, and as long as you stay under 9s per input, everything merges into the current version. By the time you stop, it looks organic.
 
-1. Create a fresh Google Doc; disable unrelated extensions and collaborators.  
-2. Set the AppleScript `delay` to the target `i`.  
-3. Run for the planned duration `t`.  
-4. Open Version history and record new minor versions `v`.  
-5. Repeat for other `i` / input types and compare.
+Beside, The average typing speed for a university student composing an essay (thinking while writing) is about 19 words per minute (WPM), versus 33 WPM for copying text. This varies by factors like experience and complexity, but 10-20 WPM is typical for thoughtful writing. So try to avoid writing >60 words in two minutes.
 
----
+**Source**: Karat et al. (1999) study on text entry patterns, cited in Wikipedia’s “Words per minute” article: https://en.wikipedia.org/wiki/Words_per_minute.
 
-## Responsible Use & Caveats
+Overall, this helps you understand the mechanics behind Google Docs’ version generator better.
 
-- **Non-determinism.** Version creation depends on network jitter, browser state, concurrency, and background tasks; identical settings may yield different splits.  
-- **Scope.** This project examines Docs’ **version history behavior** only. Related topics (e.g., cross-revision comment anchors) are known to be unstable and are outside this study’s scope.  
-- **Ethics.** Do not use these observations to mislead instructors or mask misconduct. Treat version history as an **imperfect, context-dependent artifact**.
+-----
 
----
+## Notes & Cautions
 
-## License
-
-MIT (with the Responsible-Use notice above). Contributions with anonymized data points are welcome.
-
----
-
-<sub>Back to top: [TrickTheGoogleDoc (Research Edition)](#trickthegoogledoc-research-edition)</sub>
+Use AI for homework at your own risk—and use it wisely. Don’t copy-paste blindly. I don’t recommend relying on AI, and I oppose any attempt to evade academic-integrity policies.
