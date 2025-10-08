@@ -35,14 +35,17 @@ Measurement
 	•	After each run, open File → Version history → See version history and record the number of newly created minor versions v. When visible, also note approximate characters per version.
 
 Automation script (AppleScript, example)
-/
+
 set letters to {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
+
 -- Baseline string to drive line breaks / punctuation rhythm
 set baseline to "mbmaqslkteojnqclzyoziwbfcwazbmahtqxwnctnx"
 set x to (length of baseline)
+
 set totalKeystrokes to 1000
 set typedLetters to 0
 set jitter to (random number from 80 to 150) / 100.0 -- 0.80–1.50s jitter (optional)
+
 tell application "System Events"
   delay 3 -- time to focus the browser and the doc
   repeat totalKeystrokes times
@@ -70,7 +73,7 @@ tell application "System Events"
     delay 1
   end repeat
 end tell
-/
+
 For each run, adjust delay to the target i (e.g., 1s, 5s, 9–10s, 20s) and keep other conditions fixed.
 
 ⸻
