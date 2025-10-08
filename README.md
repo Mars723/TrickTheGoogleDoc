@@ -1,56 +1,64 @@
-# TrickTheGoogleDoc
+TrickTheGoogleDoc
 
-
-Reverse-engineering how Google Docs builds version history — to understand what version gaps can and can’t prove.
+Reverse-engineering how Google Docs generates its version history to understand what version gaps can—and can’t—prove.
 
 ⚠️ Responsible use
-本项目仅用于技术研究与再现性验证，不要将其用于误导教师、规避学术诚信规则或任何形式的作弊。研究结果提示的是“版本历史并非强证据”，而不是“可以操控版本历史”。
-
-目录
-	•	背景 / 灵感
-	•	实验设计与过程（含脚本）
-	•	实验结果（数字化摘要）
-	•	发现与解释（工程视角）
-	•	可复现与环境
-	•	合规应用与注意事项
-	•	免责声明与许可
+This repository is for technical research, education, and reproducibility only. Do not use these observations to mislead instructors or evade academic-integrity policies.
 
 ⸻
 
-背景 / 灵感
-
-一些教学实践会用 Google Docs 的 Version history（版本历史）来推断作者行为，例如“是否整段粘贴”“是否一次成文”“是否使用了 AI”。我们出于工程好奇与可复现性考虑，系统测试了 Google Docs 在持续编辑与不同输入节奏下生成“子版本（minor versions）”的规律与边界：它到底是按时间切、还是按保存批次切、还是二者混合？版本间隔是否稳定？网络与端侧保存延迟会带来多大抖动？
-
-目标：理解机制与局限，而不是制造“规避技巧”。一个直接的教育含义是：仅凭版本间隔去推断抄袭/AI，很容易误判。
+Table of Contents
+	•	Inspiration
+	•	Experimental Design & Procedure (with script)
+	•	Results (numeric summary)
+	•	Findings & Interpretation
+	•	Reproducibility & Environment
+	•	Responsible Use & Caveats
+	•	License
 
 ⸻
 
-实验设计与过程
+Inspiration
 
-总体思路
-在空白 Google 文档中，用自动化脚本以不同的间隔与模式持续输入字符，并记录在给定时间内产生的“子版本”数量；对“仅字母”“加空格/标点”“随机换行”等进行分组。随后对版本历史进行计数与对比。
+Some courses inspect Google Docs Version history to infer writing behavior (e.g., “pasted in one go,” “single draft,” “AI-assisted”). Out of engineering curiosity and for reproducibility, this project measures how minor versions are created under different typing cadences and input types, and highlights why version gaps alone are a weak signal.
 
-脚本（AppleScript，示例）
+⸻
+
+Experimental Design & Procedure (with script)
+
+Independent variables
+	•	i: time interval (seconds) between two keystrokes
+	•	t: total experiment duration
+	•	Input type: letters only / letters + spaces + punctuation / occasional newlines
+
+Measurement
+	•	After each run, open File → Version history → See version history and record the number of newly created minor versions v. When visible, also note approximate characters per version.
+
+Automation script (AppleScript, example)
 
 set letters to {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
 
+-- Baseline string to drive line breaks / punctuation rhythm
 set baseline to "mbmaqslkteojnqclzyoziwbfcwazbmahtqxwnctnx"
 set x to (length of baseline)
 
 set totalKeystrokes to 1000
 set typedLetters to 0
-set jitter to (random number from 80 to 150) / 100.0 -- 0.80~1.50s 抖动
+set jitter to (random number from 80 to 150) / 100.0 -- 0.80–1.50s jitter (optional)
 
 tell application "System Events"
-  delay 3 -- 切回浏览器并聚焦文档的时间
+  delay 3 -- time to focus the browser and the doc
   repeat totalKeystrokes times
+    -- (1) type a random letter
     set i to (random number from 1 to (count of letters))
     keystroke (item i of letters)
     set typedLetters to typedLetters + 1
 
+    -- (2) line breaks at x and 2x+5
     if (typedLetters = x) or (typedLetters = (2 * x + 5)) then
       keystroke return
     else
+      -- (3) punctuation every (x+3) characters
       if (typedLetters mod (x + 3) = 0) then
         set punctChoice to (random number from 1 to 2)
         if punctChoice = 1 then
@@ -61,87 +69,65 @@ tell application "System Events"
       end if
     end if
 
-    delay 1 -- 依据实验配置改为 0.5s / 5s / 10s / 20s 等
+    -- (4) keystroke interval; set this to 0.5 / 1 / 5 / 10 / 20, etc.
+    delay 1
   end repeat
 end tell
 
-变量说明（核心自变量）
-	•	i：连续两次字符输入的时间间隔（秒）
-	•	t：实验持续时长
-	•	输入类型：仅字母 / 字母+空格+标点 / 随机换行
-
-记录方法
-	•	每轮结束后打开 File → Version history → See version history，统计本轮新增“子版本”数。
+For each run, adjust delay to the target i (e.g., 1s, 5s, 9–10s, 20s) and keep other conditions fixed.
 
 ⸻
 
-实验结果（数字化摘要）
+Results (numeric summary)
 
-注：下表仅放数字与短语（不包含长句）。
+Exp	i (s)	Input	t (min)	Minor versions v	Notes (short)
+1	1	letters	12	1	merged
+2	0.5–1.5	letters/space/punct	15	1	jitter didn’t split
+3	5	same	25	1	merged
+4	20	same	—	≈1 per input	frequent splits
+5	11	same	—	≈1 per input	near a threshold
+6	~10	same	—	many	often 1–2 chars/version; some 5
+7	9.9	same	—	7	per-version chars varied (e.g., 2–25)
+8	9.5	same	—	2	~60 chars; ~10 chars
+9	9	same	—	1	all merged
 
-实验	i（秒）	输入类型	t（分钟）	观察到的子版本数 v	简短备注
-1	1	letters	12	1	持续合并
-2	0.5–1.5	letters/space/punct	15	1	抖动不触发切版
-3	5	same	25	1	仍合并
-4	20	same	—	≈1/次输入	接近“每次输入即新版本”
-5	11	same	—	≈1/次输入	临界附近易切版
-6	10	same	—	21（其中 15×1字母/版）	多为很小批次
-7	9.9	same	—	7（2/25/25/3/20/10/15 字/版）	批次大小波动大
-8	9.5	same	—	2（60 字；10 字）	明显批处理
-9	9	same	—	1	合并为单一版本
-
-总体观感（中立表述）
-	•	版本生成并非纯时间门限；更像是**“保存批次 + 定期快照”的结合，并受到网络/端侧保存延迟**影响。
-	•	在“较长间隔”（例如十几秒）下，更容易观察到频繁切版；在“较短间隔”（数秒内）下，大量编辑会合并进同一子版本。
-	•	同一间隔在不同时间段得到的“每版字符数”差异很大，提示保存触发具有抖动（网络、服务端调度、前端节流）。
 
 ⸻
 
-发现与解释（工程视角，假设）
-	•	批处理保存：Docs 会将相邻的编辑合并为批，并周期性触发“子版本”快照；如果某次保存发生在“快照边界”附近，可能出现“同一间隔、不同分版”的现象。
-	•	端侧/网络延迟：一次编辑从产生到写入后端存在数百毫秒到数秒的链路与排队延迟，导致“批的切分点”漂移，从而使每个版本包含的字符数量呈高度波动。
-	•	非确定性：由于上述抖动，同样的脚本在不同时段/不同网络会得到不可复现的分版粒度；这意味着仅凭版本间隔推断写作行为并不可靠。
+Findings & Interpretation
+	•	Batching + periodic snapshots. Version creation behaves like a combination of save batching and periodic snapshots, not a simple fixed-second cutoff.
+	•	Short intervals merge edits. With short keystroke intervals (a few seconds), large amounts of typing often collapse into a single minor version.
+	•	Longer intervals split more. With longer intervals (≈10–20s), minor versions split more frequently, sometimes close to “one per input.”
+	•	Non-deterministic boundaries. The number of characters per version varies widely even at the same i, suggesting client/network latency and server scheduling jitter shift the batch boundaries.
+	•	Empirical neighborhood: around ~10–11 seconds we often observed easier splitting; below ~9 seconds we often saw merges. These are observations, not guarantees.
 
-相关背景：Google 官方文档提示锚点/修订在不同版本间的相对位置不保证稳定，锚点是不可变的，位置可能变化或失效（与评论锚点问题类似）。这提示版本/锚点体系本身就不是“严格时序证据”。
-
-⸻
-
-可复现与环境
-	•	时间与地点：2025-10-06（America/Indiana/Indianapolis）
-	•	文档设置：空白 Docs，默认自动保存；无第三方加载项
-	•	浏览器：Chrome（桌面版）
-	•	网络：家庭宽带（普通波动）
-	•	操作：脚本自动输入；人工记录版本数
-
-复现步骤
-	1.	新建测试文档；关闭无关扩展/同步编辑。
-	2.	按需修改脚本中的 delay（即 i）。
-	3.	运行脚本，结束后在 “See version history” 页面统计新增子版本数。
-	4.	更换 i / t / 输入类型，重复采样并记录。
+Educational takeaway: Version gaps are a weak signal. They should not be used in isolation to assert copy-paste, single-draft writing, or AI assistance.
 
 ⸻
 
-合规应用与注意事项
+Reproducibility & Environment
+	•	Date / TZ: 2025-10-06, America/Indiana/Indianapolis
+	•	Doc: blank Google Doc, default autosave, no add-ons
+	•	Browser: Chrome (desktop)
+	•	Network: residential broadband (ordinary variance)
+	•	Method: automated keystrokes; manual counting in Version history
 
-可以怎么用（正当场景）
-	•	教学与评估：提醒教师与助教：不要仅凭版本间隔判断“是否整段粘贴/一次成文/AI 生成”。把版本历史当作弱证据，结合草稿、引用、过程性材料综合评估。
-	•	产品与研发：为自动保存/协作编辑设计提供自测基准；验证批处理策略对用户体验与冲突率的影响。
-	•	研究：为文档协作中的“事件合并”“延迟容忍”提供可复现样本与数据点。
-
-不要怎么用（禁止场景）
-	•	任何旨在规避学术诚信审查、伪造写作过程或误导评估者的用法。
-	•	将本文结果当作“操作指南”去“制造证据缺口”。这既不道德，也可能违反校纪校规。
-
-注意事项
-	•	版本历史受多因素影响：网络抖动、浏览器状态、并发编辑、后台任务；同一条件下不保证重现。
-	•	自动化脚本可能被系统拦截或需要辅助权限；仅在个人测试文档中使用，勿扰他人协作文档。
-	•	结果不代表 Google 的官方实现细节；仅是面向黑箱系统的行为测量。
+How to reproduce
+	1.	Create a fresh Google Doc; disable unrelated extensions and collaborators.
+	2.	Set the AppleScript delay to the target i.
+	3.	Run for the planned duration t.
+	4.	Open Version history and record new minor versions v.
+	5.	Repeat for other i / input types and compare.
 
 ⸻
 
-免责声明与许可
-	•	本仓库仅用于教育与研究目的，不提供规避审查的指导。使用本仓库即表示你同意遵守所在机构的学术与行为规范。
-	•	建议采用开源许可（如 MIT）并附上本免责声明。
+Responsible Use & Caveats
+	•	Non-determinism. Version creation depends on network jitter, browser state, concurrency, and background tasks; identical settings may yield different splits.
+	•	Scope. This project examines Docs’ version history behavior only. Related topics (e.g., comment anchors across revisions) are known to be unstable and are outside this study’s scope.
+	•	Ethics. Do not use these observations to mislead instructors or mask misconduct. Treat version history as an imperfect, context-dependent artifact.
 
 ⸻
 
+License
+
+MIT (with the Responsible-Use notice above). Contributions with anonymized data points are welcome.
